@@ -27,6 +27,7 @@ from .const import (
     CONF_ACCOUNTS,
     CONF_BASE_URL,
     CONF_ENTITY_KEYS,
+    CONSUMPTION_KEYS,
     DEFAULT_BASE_URL,
     DEFAULT_ENTITY_KEYS,
     DOMAIN,
@@ -187,6 +188,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         scan_interval=settings.scan_interval(entry),
         recharge_pages=settings.recharge_pages(entry),
         enable_recharges=bool(entity_keys & RECHARGE_KEYS),
+        enable_consumption=bool(entity_keys & CONSUMPTION_KEYS),
     )
 
     try:
@@ -230,6 +232,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if runtime is not None:
             await runtime.coordinator.api.async_close()
     return unload_ok
+
 
 
 

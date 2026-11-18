@@ -65,20 +65,46 @@
   },
   "entity": {
     "sensor": {
-      "balance": { "name": "Balance" },
-      "usage": { "name": "Total gas usage" },
-      "data_updated_at": { "name": "Data timestamp" },
-      "last_recharge_amount": { "name": "Last recharge amount" },
-      "last_recharge_time": { "name": "Last recharge time" },
-      "recharge_count": { "name": "Recharge count" },
-      "last_refresh": { "name": "Last refresh" }
+      "balance": {
+        "name": "Balance"
+      },
+      "usage": {
+        "name": "Total gas usage"
+      },
+      "daily_usage": {
+        "name": "Daily usage (local)"
+      },
+      "monthly_usage": {
+        "name": "Monthly usage (local)"
+      },
+      "data_updated_at": {
+        "name": "Data timestamp"
+      },
+      "last_recharge_amount": {
+        "name": "Last recharge amount"
+      },
+      "last_recharge_time": {
+        "name": "Last recharge time"
+      },
+      "recharge_count": {
+        "name": "Recharge count"
+      },
+      "last_refresh": {
+        "name": "Last refresh"
+      }
     },
     "binary_sensor": {
-      "supply": { "name": "Gas supply" },
-      "low_balance": { "name": "Low balance" }
+      "supply": {
+        "name": "Gas supply"
+      },
+      "low_balance": {
+        "name": "Low balance"
+      }
     },
     "button": {
-      "refresh": { "name": "Refresh now" }
+      "refresh": {
+        "name": "Refresh now"
+      }
     }
   }
 }

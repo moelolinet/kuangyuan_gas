@@ -24,7 +24,7 @@ def main() -> int:
     files = sorted(
         path
         for path in HERE.glob("test_*.py")
-        if path.name in {"test_parsers.py", "test_settings.py"}
+        if path.name in {"test_parsers.py", "test_settings.py", "test_usage.py"}
     )
     total = failed = 0
     for path in files:
@@ -56,4 +56,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
 

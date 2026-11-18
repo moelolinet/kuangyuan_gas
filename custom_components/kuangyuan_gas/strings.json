@@ -65,20 +65,46 @@
   },
   "entity": {
     "sensor": {
-      "balance": { "name": "账户余额" },
-      "usage": { "name": "累积用气量" },
-      "data_updated_at": { "name": "数据时间" },
-      "last_recharge_amount": { "name": "最近充值金额" },
-      "last_recharge_time": { "name": "最近充值时间" },
-      "recharge_count": { "name": "充值笔数" },
-      "last_refresh": { "name": "最后刷新时间" }
+      "balance": {
+        "name": "账户余额"
+      },
+      "usage": {
+        "name": "累积用气量"
+      },
+      "daily_usage": {
+        "name": "日用气量（本机统计）"
+      },
+      "monthly_usage": {
+        "name": "月用气量（本机统计）"
+      },
+      "data_updated_at": {
+        "name": "数据时间"
+      },
+      "last_recharge_amount": {
+        "name": "最近充值金额"
+      },
+      "last_recharge_time": {
+        "name": "最近充值时间"
+      },
+      "recharge_count": {
+        "name": "充值笔数"
+      },
+      "last_refresh": {
+        "name": "最后刷新时间"
+      }
     },
     "binary_sensor": {
-      "supply": { "name": "通气状态" },
-      "low_balance": { "name": "余额不足" }
+      "supply": {
+        "name": "通气状态"
+      },
+      "low_balance": {
+        "name": "余额不足"
+      }
     },
     "button": {
-      "refresh": { "name": "立即刷新" }
+      "refresh": {
+        "name": "立即刷新"
+      }
     }
   }
 }

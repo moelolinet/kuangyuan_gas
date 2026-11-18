@@ -1,7 +1,9 @@
 {
   "domain": "kuangyuan_gas",
   "name": "Kuangyuan Gas (旷远燃气)",
-  "codeowners": ["@moelolinet"],
+  "codeowners": [
+    "@moelolinet"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/moelolinet/kuangyuan_gas",
   "issue_tracker": "https://github.com/moelolinet/kuangyuan_gas/issues",
@@ -9,5 +11,5 @@
   "dependencies": [],
   "requirements": [],
   "iot_class": "cloud_polling",
-  "version": "1.0.0"
+  "version": "1.1.0"
 }

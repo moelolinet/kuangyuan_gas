@@ -87,6 +87,8 @@ def test_entity_catalogue_matches_user_request():
     assert keys == {
         "balance",
         "usage",
+        "daily_usage",
+        "monthly_usage",
         "supply",
         "low_balance",
         "data_updated_at",
@@ -96,7 +98,8 @@ def test_entity_catalogue_matches_user_request():
         "last_refresh",
         "refresh",
     }, keys
-    assert len(const.METER_LEVEL_KEYS) == 8
+    assert len(const.METER_LEVEL_KEYS) == 10
+    assert const.CONSUMPTION_KEYS == {"daily_usage", "monthly_usage"}
     assert const.ACCOUNT_LEVEL_KEYS == {"last_refresh", "refresh"}
     # No privacy entity survives the user's selection.
     for leaked in ("owner", "address", "phone", "category"):
@@ -162,3 +165,4 @@ def test_stored_accounts_filters_invalid_rows():
     )
     stored = settings.stored_accounts(entry)
     assert len(stored) == 1 and stored[0]["uno"] == "A"
+
