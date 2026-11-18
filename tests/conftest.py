@@ -24,7 +24,7 @@ BALANCE_OK = (
     "<tr><td>余额 ：</td><td>%.4f 元</td></tr>"
     "<tr><td>累积用气量 ：</td><td>%.4f 方气</td></tr>"
     "<tr><td>是否通气：</td><td>%s</td></tr>"
-    "<tr><td>操作时间：</td><td>2026-11-18 06:37:06</td></tr>"
+    "<tr><td>操作时间：</td><td>2026-01-02 03:04:05</td></tr>"
     "</table>"
 )
 
@@ -46,10 +46,10 @@ MAIN_HTML = """
 RECHARGE_HTML = """
 <table><thead><tr><th>用户编号</th><th>用户手机号</th><th>订单号</th><th>充值金额</th>
 <th>账户余额</th><th>支付方式</th><th>支付结果</th><th>充值时间</th></tr></thead><tbody>
-<tr><td>UNO000001</td><td>13800000001</td><td>ORDER1</td><td>￥200.00 元</td><td>￥980.1111 元</td>
-<td>微信支付</td><td>交易完成</td><td>2026/11/6 19:50:06</td></tr>
-<tr><td>UNO000001</td><td>13800000001</td><td>ORDER2</td><td>￥100.00 元</td><td>￥880.2222 元</td>
-<td>微信支付</td><td>交易完成</td><td>2026/5/3 15:16:01</td></tr>
+<tr><td>UNO000001</td><td>13800000001</td><td>SYNTHETICORDER0000000001</td><td>￥200.00 元</td><td>￥980.1111 元</td>
+<td>微信支付</td><td>交易完成</td><td>2026/03/04 05:06:07</td></tr>
+<tr><td>UNO000001</td><td>13800000001</td><td>SYNTHETICORDER0000000002</td><td>￥100.00 元</td><td>￥880.2222 元</td>
+<td>微信支付</td><td>交易完成</td><td>2026/01/02 03:04:05</td></tr>
 </tbody></table>
 """
 

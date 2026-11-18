@@ -56,7 +56,7 @@ BALANCE_HTML = (
     "<tr><td>余额 ：</td><td>123.4500 元</td></tr>"
     "<tr><td>累积用气量 ：</td><td>45.6700 方气</td></tr>"
     "<tr><td>是否通气：</td><td>已通气</td></tr>"
-    "<tr><td>操作时间：</td><td>2026-11-18 06:37:06</td></tr>"
+    "<tr><td>操作时间：</td><td>2026-01-02 03:04:05</td></tr>"
     "</table>"
     "<div class=\"alert alert-info\" role=\"alert\">点击上面的阴影区域可关闭当前信息!</div>"
 )
@@ -83,9 +83,9 @@ MAIN_HTML = """
 RECHARGE_HTML = """
 <table class="table table-striped"><thead><tr><th>用户编号</th><th>用户手机号</th><th>订单号</th><th>充值金额</th><th>账户余额</th><th>支付方式</th><th>支付结果</th><th>充值时间</th></tr></thead>
 <tbody>
-<tr><td>UNO000001</td><td>13800000001</td><td>SYNTHETICORDER0000000001</td><td>￥200.00 元</td><td>￥980.1111 元</td><td>微信支付</td><td>交易完成</td><td>2026/11/6 19:50:06</td></tr>
-<tr><td>UNO000002</td><td>13900000002</td><td>SYNTHETICORDER0000000002</td><td>￥50.00 元</td><td>￥70.3333 元</td><td>微信支付</td><td>交易完成</td><td>2026/8/3 17:02:08</td></tr>
-<tr><td>UNO000001</td><td>13800000001</td><td>SYNTHETICORDER0000000003</td><td>￥100.00 元</td><td>￥880.2222 元</td><td>微信支付</td><td>交易完成</td><td>2026/5/3 15:16:01</td></tr>
+<tr><td>UNO000001</td><td>13800000001</td><td>SYNTHETICORDER0000000001</td><td>￥200.00 元</td><td>￥980.1111 元</td><td>微信支付</td><td>交易完成</td><td>2026/01/02 03:04:05</td></tr>
+<tr><td>UNO000002</td><td>13900000002</td><td>SYNTHETICORDER0000000002</td><td>￥50.00 元</td><td>￥70.3333 元</td><td>微信支付</td><td>交易完成</td><td>2026/02/03 04:05:06</td></tr>
+<tr><td>UNO000001</td><td>13800000001</td><td>SYNTHETICORDER0000000003</td><td>￥100.00 元</td><td>￥880.2222 元</td><td>微信支付</td><td>交易完成</td><td>2026/03/04 05:06:07</td></tr>
 </tbody></table>
 """
 
@@ -135,7 +135,7 @@ def test_parse_recharges():
     assert rows[0].balance_after == 980.1111
     assert rows[0].pay_method == "微信支付"
     assert rows[0].pay_result == "交易完成"
-    assert rows[0].paid_at is not None and rows[0].paid_at.month == 11
+    assert rows[0].paid_at is not None and rows[0].paid_at.month == 1
 
 
 def test_parse_recharges_ignores_garbage():
