@@ -1,0 +1,84 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Kuangyuan Gas account",
+        "description": "Enter the mobile number and password of the customer portal (www.kynyyyt.com). Credentials are stored only in your local Home Assistant configuration.",
+        "data": {
+          "username": "Mobile number",
+          "password": "Password",
+          "base_url": "Portal URL"
+        }
+      },
+      "meters": {
+        "title": "Meters and entities",
+        "description": "Select the gas meters (户号) to expose and the entity kinds for each of them. Keep the refresh interval at 300 seconds or more to avoid tripping the portal's rate limiting.",
+        "data": {
+          "selected_unos": "Meters to show",
+          "entity_keys": "Entities to enable",
+          "scan_interval": "Refresh interval (seconds)",
+          "low_balance_threshold": "Low balance threshold (CNY)",
+          "enable_recharge_sensors": "Read recharge history",
+          "recharge_pages": "Recharge history pages"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate Kuangyuan Gas",
+        "description": "The session for {username} ({url}) is no longer valid. Enter the password again.",
+        "data": {
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Wrong mobile number or password",
+      "cannot_connect": "Cannot reach the portal (rate limited?), please try again later",
+      "no_accounts": "No gas meter is bound to this account",
+      "no_meter_selected": "Select at least one meter",
+      "unknown": "Unexpected error, check the log"
+    },
+    "abort": {
+      "already_configured": "This account is already configured",
+      "reauth_successful": "Re-authentication successful",
+      "reauth_failed": "Re-authentication failed, remove and add the integration again",
+      "no_accounts": "No gas meter available"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Kuangyuan Gas options",
+        "description": "Choose the meters and entity kinds of this account and set the refresh interval.",
+        "data": {
+          "selected_unos": "Meters to show",
+          "entity_keys": "Entities to enable",
+          "scan_interval": "Refresh interval (seconds)",
+          "low_balance_threshold": "Low balance threshold (CNY)",
+          "enable_recharge_sensors": "Read recharge history",
+          "recharge_pages": "Recharge history pages"
+        }
+      }
+    },
+    "error": {
+      "no_meter_selected": "Select at least one meter"
+    }
+  },
+  "entity": {
+    "sensor": {
+      "balance": { "name": "Balance" },
+      "usage": { "name": "Total gas usage" },
+      "data_updated_at": { "name": "Data timestamp" },
+      "last_recharge_amount": { "name": "Last recharge amount" },
+      "last_recharge_time": { "name": "Last recharge time" },
+      "recharge_count": { "name": "Recharge count" },
+      "last_refresh": { "name": "Last refresh" }
+    },
+    "binary_sensor": {
+      "supply": { "name": "Gas supply" },
+      "low_balance": { "name": "Low balance" }
+    },
+    "button": {
+      "refresh": { "name": "Refresh now" }
+    }
+  }
+}

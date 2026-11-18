@@ -1,0 +1,30 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Home Assistant local files
+.storage/
+home-assistant.log
+home-assistant_v2.db
+home-assistant_v2.db-*
+*.db-journal
+
+# Secrets and captured traffic - never publish
+secrets.yaml
+configuration.yaml
+*.har
+*.har.*
+*.html
+*.txt
+data/
+config.json
+cookies.txt
+cache.json
+
+# Editors & OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
