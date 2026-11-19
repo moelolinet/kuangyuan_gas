@@ -1,20 +1,20 @@
 {
   "domain": "kuangyuan_gas",
   "name": "Kuangyuan Gas",
+  "after_dependencies": [
+    "recorder"
+  ],
   "codeowners": [
     "@moelolinet"
   ],
   "config_flow": true,
   "documentation": "https://github.com/moelolinet/kuangyuan_gas",
-  "issue_tracker": "https://github.com/moelolinet/kuangyuan_gas/issues",
   "integration_type": "hub",
-  "requirements": [],
   "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/moelolinet/kuangyuan_gas/issues",
   "loggers": [
     "custom_components.kuangyuan_gas"
   ],
-  "version": "1.2.0",
-  "after_dependencies": [
-    "recorder"
-  ]
+  "requirements": [],
+  "version": "1.2.0"
 }
