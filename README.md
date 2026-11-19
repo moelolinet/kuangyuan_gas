@@ -6,7 +6,7 @@
 
 Home Assistant integration for the Kuangyuan Energy customer portal
 
-[![简体中文](https://img.shields.io/badge/%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-0969da?style=for-the-badge&logo=readme&logoColor=white)](README.zh-CN.md)
+**English** | [简体中文](README.zh-CN.md)
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 [![GitHub release](https://img.shields.io/github/v/release/moelolinet/kuangyuan_gas)](https://github.com/moelolinet/kuangyuan_gas/releases)
