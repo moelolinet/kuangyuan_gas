@@ -95,12 +95,12 @@ def test_entity_catalogue_matches_user_request():
         "last_recharge_amount",
         "last_recharge_time",
         "recharge_count",
-        "last_refresh",
         "refresh",
     }, keys
-    assert len(const.METER_LEVEL_KEYS) == 10
+    assert len(const.METER_LEVEL_KEYS) == 11
     assert const.CONSUMPTION_KEYS == {"daily_usage", "monthly_usage"}
-    assert const.ACCOUNT_LEVEL_KEYS == {"last_refresh", "refresh"}
+    # There is no account level device any more: every entity belongs to a meter.
+    assert not hasattr(const, "ACCOUNT_LEVEL_KEYS")
     # No privacy entity survives the user's selection.
     for leaked in ("owner", "address", "phone", "category"):
         assert leaked not in keys

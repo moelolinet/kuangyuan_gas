@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Kuangyuan Gas account",
-        "description": "Enter the mobile number and password of the customer portal (www.kynyyyt.com). Credentials are stored only in your local Home Assistant configuration.",
+        "description": "Enter the mobile number and password of the Kuangyuan Energy customer portal (www.kynyyyt.com). Credentials are stored only in your local Home Assistant configuration.",
         "data": {
           "username": "Mobile number",
           "password": "Password",
@@ -12,13 +12,12 @@
       },
       "meters": {
         "title": "Meters and entities",
-        "description": "Select the gas meters (户号) to expose and the entity kinds for each of them. Keep the refresh interval at 300 seconds or more to avoid tripping the portal's rate limiting.",
+        "description": "Select the gas meters to expose and the entity types to create for each of them. Keep the refresh interval at 300 seconds or more to avoid the portal's rate limiting.",
         "data": {
           "selected_unos": "Meters to show",
           "entity_keys": "Entities to enable",
           "scan_interval": "Refresh interval (seconds)",
           "low_balance_threshold": "Low balance threshold (CNY)",
-          "enable_recharge_sensors": "Read recharge history",
           "recharge_pages": "Recharge history pages"
         }
       },
@@ -48,13 +47,12 @@
     "step": {
       "init": {
         "title": "Kuangyuan Gas options",
-        "description": "Choose the meters and entity kinds of this account and set the refresh interval.",
+        "description": "Choose the meters and entity types of this account and set the refresh interval.",
         "data": {
           "selected_unos": "Meters to show",
           "entity_keys": "Entities to enable",
           "scan_interval": "Refresh interval (seconds)",
           "low_balance_threshold": "Low balance threshold (CNY)",
-          "enable_recharge_sensors": "Read recharge history",
           "recharge_pages": "Recharge history pages"
         }
       }
@@ -88,9 +86,6 @@
       },
       "recharge_count": {
         "name": "Recharge count"
-      },
-      "last_refresh": {
-        "name": "Last refresh"
       }
     },
     "binary_sensor": {

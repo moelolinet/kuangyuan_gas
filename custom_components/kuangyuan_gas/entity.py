@@ -41,27 +41,13 @@ def portal_local(value: datetime | None) -> datetime | None:
     return value
 
 
-class KuangyuanAccountEntity(CoordinatorEntity[KuangyuanCoordinator]):
-    """Base class for entities that belong to the signed-in customer."""
-
-    _attr_has_entity_name = True
-    _attr_should_poll = False
-
-    def __init__(
-        self, coordinator: KuangyuanCoordinator, account_label: str
-    ) -> None:
-        super().__init__(coordinator)
-        self._account_label = account_label
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, f"{coordinator.entry.entry_id}_account")},
-            name=f"{DEVICE_PREFIX} {account_label}",
-            manufacturer=MANUFACTURER,
-            model="网上营业厅账号",
-        )
-
-
 class KuangyuanMeterEntity(CoordinatorEntity[KuangyuanCoordinator]):
-    """Base class for entities of a single gas meter (用户编号)."""
+    """Base class for entities of a single gas meter (用户编号).
+
+    Each meter is a standalone device: the integration does not create a
+    separate "account" device, so the integration page only lists the meters
+    themselves and every entity lives on one of them.
+    """
 
     _attr_has_entity_name = True
     _attr_should_poll = False
@@ -79,8 +65,7 @@ class KuangyuanMeterEntity(CoordinatorEntity[KuangyuanCoordinator]):
             identifiers={(DOMAIN, f"{coordinator.entry.entry_id}_{account.uno}")},
             name=f"{DEVICE_PREFIX} {account.uno}",
             manufacturer=MANUFACTURER,
-            model="燃气表账号",
-            via_device=(DOMAIN, f"{coordinator.entry.entry_id}_account"),
+            model="燃气表",
         )
 
     @property

@@ -1,4 +1,4 @@
-"""Constants for the Kuangyuan Gas (旷远燃气) integration."""
+"""Constants for the Kuangyuan Gas integration."""
 
 from __future__ import annotations
 
@@ -7,8 +7,8 @@ from typing import Final
 
 DOMAIN: Final = "kuangyuan_gas"
 NAME: Final = "Kuangyuan Gas"
-# Device names are user facing, so the Chinese brand name is used there while
-# the domain/manifest keep an ascii value.
+# Shown in the Home Assistant UI for devices; the domain and manifest stay
+# ascii because they are also used in file paths and unique ids.
 DEVICE_PREFIX: Final = "旷远燃气"
 MANUFACTURER: Final = "旷远能源股份有限公司"
 
@@ -19,7 +19,6 @@ CONF_ACCOUNTS: Final = "accounts"
 CONF_SELECTED_UNOS: Final = "selected_unos"
 CONF_SCAN_INTERVAL: Final = "scan_interval"
 CONF_LOW_BALANCE: Final = "low_balance_threshold"
-CONF_ENABLE_RECHARGE: Final = "enable_recharge_sensors"
 CONF_ENTITY_KEYS: Final = "entity_keys"
 CONF_RECHARGE_PAGES: Final = "recharge_pages"
 
@@ -31,7 +30,7 @@ DEFAULT_LOW_BALANCE: Final = 20.0
 DEFAULT_RECHARGE_PAGES: Final = 1
 MAX_RECHARGE_PAGES: Final = 5
 
-# Upper bound on the number of utility accounts one entry may expose.
+# Upper bound on the number of gas meters one account may expose.
 MAX_ACCOUNTS: Final = 20
 
 # The portal sits behind a cloud WAF in front of an ASP application, so
@@ -49,31 +48,33 @@ KEY_UPDATED_AT: Final = "data_updated_at"
 KEY_LAST_RECHARGE_AMOUNT: Final = "last_recharge_amount"
 KEY_LAST_RECHARGE_TIME: Final = "last_recharge_time"
 KEY_RECHARGE_COUNT: Final = "recharge_count"
-KEY_LAST_REFRESH: Final = "last_refresh"
 KEY_REFRESH_BUTTON: Final = "refresh"
 
 # Entity kinds offered by the integration, in UI order.
-# Each tuple is (key, account_level, default_enabled).
+# Every entity belongs to one gas meter (user 编号); there is no separate
+# account level device, so the entry only lists the meters themselves.
 ENTITY_OPTIONS: Final = (
-    (KEY_BALANCE, False, True),
-    (KEY_USAGE, False, True),
-    (KEY_DAILY_USAGE, False, True),
-    (KEY_MONTHLY_USAGE, False, True),
-    (KEY_SUPPLY, False, True),
-    (KEY_LOW_BALANCE, False, True),
-    (KEY_UPDATED_AT, False, True),
-    (KEY_LAST_RECHARGE_AMOUNT, False, True),
-    (KEY_LAST_RECHARGE_TIME, False, True),
-    (KEY_RECHARGE_COUNT, False, True),
-    (KEY_LAST_REFRESH, True, True),
-    (KEY_REFRESH_BUTTON, True, True),
+    (KEY_BALANCE, True),
+    (KEY_USAGE, True),
+    (KEY_DAILY_USAGE, True),
+    (KEY_MONTHLY_USAGE, True),
+    (KEY_SUPPLY, True),
+    (KEY_LOW_BALANCE, True),
+    (KEY_UPDATED_AT, True),
+    (KEY_LAST_RECHARGE_AMOUNT, True),
+    (KEY_LAST_RECHARGE_TIME, True),
+    (KEY_RECHARGE_COUNT, True),
+    (KEY_REFRESH_BUTTON, True),
 )
 
-ALL_ENTITY_KEYS: Final = [key for key, _account, _default in ENTITY_OPTIONS]
-DEFAULT_ENTITY_KEYS: Final = [key for key, _account, default in ENTITY_OPTIONS if default]
-ACCOUNT_LEVEL_KEYS: Final = {key for key, account, _default in ENTITY_OPTIONS if account}
-METER_LEVEL_KEYS: Final = {key for key, account, _default in ENTITY_OPTIONS if not account}
-RECHARGE_KEYS: Final = {KEY_LAST_RECHARGE_AMOUNT, KEY_LAST_RECHARGE_TIME, KEY_RECHARGE_COUNT}
+ALL_ENTITY_KEYS: Final = [key for key, _default in ENTITY_OPTIONS]
+DEFAULT_ENTITY_KEYS: Final = [key for key, default in ENTITY_OPTIONS if default]
+METER_LEVEL_KEYS: Final = set(ALL_ENTITY_KEYS)
+RECHARGE_KEYS: Final = {
+    KEY_LAST_RECHARGE_AMOUNT,
+    KEY_LAST_RECHARGE_TIME,
+    KEY_RECHARGE_COUNT,
+}
 # Entities whose value comes from the Home Assistant recorder instead of the
 # portal.  Enabling them requires the recorder component.
 CONSUMPTION_KEYS: Final = {KEY_DAILY_USAGE, KEY_MONTHLY_USAGE}
@@ -90,7 +91,6 @@ ENTITY_LABELS_ZH: Final = {
     KEY_LAST_RECHARGE_AMOUNT: "最近充值金额",
     KEY_LAST_RECHARGE_TIME: "最近充值时间",
     KEY_RECHARGE_COUNT: "充值笔数",
-    KEY_LAST_REFRESH: "最后刷新时间",
     KEY_REFRESH_BUTTON: "立即刷新",
 }
 
@@ -105,7 +105,6 @@ ENTITY_LABELS_EN: Final = {
     KEY_LAST_RECHARGE_AMOUNT: "Last recharge amount",
     KEY_LAST_RECHARGE_TIME: "Last recharge time",
     KEY_RECHARGE_COUNT: "Recharge count",
-    KEY_LAST_REFRESH: "Last refresh",
     KEY_REFRESH_BUTTON: "Refresh now",
 }
 

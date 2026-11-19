@@ -49,13 +49,14 @@ ACCOUNTS = [
 ALL_KEYS = [
     "balance",
     "usage",
+    "daily_usage",
+    "monthly_usage",
     "supply",
     "low_balance",
     "data_updated_at",
     "last_recharge_amount",
     "last_recharge_time",
     "recharge_count",
-    "last_refresh",
     "refresh",
 ]
 
@@ -117,8 +118,8 @@ async def test_setup_creates_all_entities(hass, fake_portal):
     assert entry.state is ConfigEntryState.LOADED
 
     mapping = registry_map(hass, entry.entry_id)
-    # 8 meter entities x 2 meters + 2 account entities.
-    assert len(mapping) == 18, sorted(mapping)
+    # 11 entities per meter x 2 meters, and no account level device.
+    assert len(mapping) == 22, sorted(mapping)
 
     balance_id = by_suffix(mapping, "UNO000001_balance")
     assert balance_id is not None
@@ -143,8 +144,10 @@ async def test_setup_creates_all_entities(hass, fake_portal):
     count_id = by_suffix(mapping, "UNO000001_recharge_count")
     assert hass.states.get(count_id).state == "2"
 
-    refresh_id = by_suffix(mapping, "account_last_refresh")
-    assert hass.states.get(refresh_id).state not in (None, STATE_UNAVAILABLE)
+    # The refresh button belongs to each meter, not to an account device.
+    assert by_suffix(mapping, "UNO000001_refresh")
+    assert by_suffix(mapping, "UNO000002_refresh")
+    assert not any("account" in unique for unique in mapping), sorted(mapping)
 
 
 async def test_low_balance_threshold(hass, fake_portal):
@@ -160,7 +163,7 @@ async def test_selected_unos_only(hass, fake_portal):
     entry = await setup_entry(hass, build_entry(BASE_URL, unos=["UNO000002"]))
     mapping = registry_map(hass, entry.entry_id)
     assert not any("UNO000001" in unique for unique in mapping), sorted(mapping)
-    assert len(mapping) == 10, sorted(mapping)
+    assert len(mapping) == 11, sorted(mapping)
 
 
 async def test_entity_keys_subset(hass, fake_portal):
@@ -169,11 +172,11 @@ async def test_entity_keys_subset(hass, fake_portal):
         hass, build_entry(BASE_URL, keys=["balance", "supply", "refresh"])
     )
     mapping = registry_map(hass, entry.entry_id)
-    # 2 keys per meter x 2 meters + refresh button
-    assert len(mapping) == 5, sorted(mapping)
+    # 3 keys per meter x 2 meters
+    assert len(mapping) == 6, sorted(mapping)
     assert by_suffix(mapping, "UNO000001_balance")
     assert by_suffix(mapping, "UNO000001_supply")
-    assert by_suffix(mapping, "account_refresh")
+    assert by_suffix(mapping, "UNO000001_refresh")
 
 
 async def test_empty_entity_selection_creates_nothing(hass, fake_portal):
@@ -247,7 +250,7 @@ async def test_refresh_button(hass, fake_portal):
     """The button triggers a poll."""
     entry = await setup_entry(hass, build_entry(BASE_URL))
     mapping = registry_map(hass, entry.entry_id)
-    button_id = by_suffix(mapping, "account_refresh")
+    button_id = by_suffix(mapping, "UNO000001_refresh")
 
     before = fake_portal.gas_calls()
     await hass.services.async_call(
@@ -270,8 +273,58 @@ async def test_two_accounts_are_independent(hass, fake_portal):
     second = await setup_entry(
         hass, build_entry(BASE_URL, unos=["UNO000002"], keys=["usage"], entry_id="b")
     )
-    assert len(registry_map(hass, first.entry_id)) == 10
+    assert len(registry_map(hass, first.entry_id)) == 11
     assert len(registry_map(hass, second.entry_id)) == 1
 
 
 
+
+async def test_only_meter_devices_and_each_has_refresh(hass, fake_portal):
+    """The hub lists only the meters, and each meter has a refresh button."""
+    from homeassistant.helpers import device_registry as dr
+
+    entry = await setup_entry(hass, build_entry(BASE_URL))
+
+    devices = dr.async_entries_for_config_entry(dr.async_get(hass), entry.entry_id)
+    names = sorted(device.name for device in devices)
+    assert names == [
+        "旷远燃气 UNO000001",
+        "旷远燃气 UNO000002",
+    ], names
+    # No account level device may exist.
+    assert not any("account" in (d.name or "").lower() for d in devices), names
+
+    for device in devices:
+        entity_ids = [
+            item.entity_id
+            for item in er.async_entries_for_config_entry(
+                er.async_get(hass), entry.entry_id
+            )
+            if item.device_id == device.id
+        ]
+        assert len(entity_ids) == 11, (device.name, entity_ids)
+        buttons = [eid for eid in entity_ids if eid.startswith("button.")]
+        assert len(buttons) == 1, (device.name, buttons)
+
+
+async def test_entry_title_defaults_to_username(hass, fake_portal):
+    """The config flow names the hub after the login account."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "user"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {
+            CONF_USERNAME: "13800000001",
+            CONF_PASSWORD: "secret",
+            CONF_BASE_URL: BASE_URL,
+        },
+    )
+    assert result["step_id"] == "meters"
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {CONF_SELECTED_UNOS: ["UNO000001", "UNO000002"], CONF_ENTITY_KEYS: ALL_KEYS},
+    )
+    assert result["type"] == "create_entry"
+    assert result["title"] == "13800000001", result["title"]
+    await hass.async_block_till_done()

@@ -1,118 +1,140 @@
-# 旷远燃气余额（Home Assistant 集成）
+<div align="center">
 
-通过 HACS 接入 **旷远能源网上营业厅**（`www.kynyyyt.com`），在 Home Assistant 中查看每个燃气户号的余额、累积用气量、日用气量、月用气量与充值记录，并对余额不足做本地提醒。
+<img src="custom_components/kuangyuan_gas/brand/icon@2x.png" width="150" alt="Kuangyuan Gas">
 
-> 本集成只调用营业厅的**查询类接口**（登录 / 户号列表 / 余额查询 / 充值记录）。它不会发起充值、缴费、改绑手机号或删除户号等任何写操作。
+# Kuangyuan Gas
+
+Home Assistant integration for the Kuangyuan Energy customer portal
+
+**English** | [简体中文](README.zh-CN.md)
+
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+[![GitHub release](https://img.shields.io/github/v/release/moelolinet/kuangyuan_gas)](https://github.com/moelolinet/kuangyuan_gas/releases)
+
+</div>
 
 ---
 
-## 功能
+Read the gas balance, cumulative usage, locally computed daily/monthly usage and recharge history of every meter bound to your Kuangyuan Energy online account (`www.kynyyyt.com`) directly in Home Assistant.
 
-- 支持**多个账号**：每个账号是一个独立配置条目，各自保存自己的凭据与设置
-- 每个账号可以**单独选择显示哪些户号**（`我家` / `亲友家`）
-- 每个账号可以**单独勾选要生成的实体**，不需要的可以关掉
-- 自动刷新间隔可设（秒），默认 1800 秒，最小 300 秒
-- 余额不足阈值可设，低于阈值时 `binary_sensor` 变为 `on`
-- 会话失效时自动重新登录一次；失败时在界面提示重新验证密码
+> This integration only calls the **read-only** endpoints of the portal (login, meter list, balance query, recharge history). It never starts a payment, a recharge, a phone-number change or a meter removal.
 
-## 日用气量 / 月用气量（本机统计）
+## Features
 
-这两个数值**不来自营业厅接口**，而是由集成读取 Home Assistant 记录器（recorder）中
-`累积用气量` 传感器自己的历史数据计算：
+- **Multiple accounts**: every account is its own config entry with its own credentials and settings
+- Choose **which meters** (`户号`) to expose for each account
+- Choose **which entities** to create for each meter
+- Configurable polling interval (seconds), default 1800, minimum 300
+- Configurable low-balance threshold; a `binary_sensor` turns on below it
+- Automatic re-login once when the portal session expires; a re-auth prompt when the password is wrong
+- One **Refresh now** button per meter
 
-| 实体 | 计算方式 |
-|------|----------|
-| 日用气量 | `当前累积用气量 − 今天 00:00 时的累积用气量` |
-| 月用气量 | `当前累积用气量 − 本月 1 号 00:00 时的累积用气量` |
+## Daily / monthly usage (computed locally)
 
-取基线时，使用该时刻**之前最近一条**记录；若此前没有记录（例如刚安装），则退而使用该时刻之后的第一条记录。
-若完全查不到历史，实体显示为不可用（而不是错误的 0）。
+These two values are **never** read from the portal. They are calculated from the
+`Total gas usage` sensor's own history stored by the Home Assistant
+[recorder](https://www.home-assistant.io/integrations/recorder/):
 
-注意事项：
+| Entity | Calculation |
+|---|---|
+| Daily usage | `current cumulative usage − cumulative usage at today 00:00` |
+| Monthly usage | `current cumulative usage − cumulative usage at the 1st of this month 00:00` |
 
-- 需要启用 Home Assistant 自带的 **recorder**（默认开启）。没有 recorder 时这两个实体不可用。
-- 刚安装时历史为空，需要累积一段时间（跨过一次 00:00）后数值才有意义。
-- 若气表读数回退（换表/清零），该区间会显示为不可用，避免出现负数。
-- 两个实体都带有 `source: home_assistant_recorder` 属性，可据此确认数值来源。
+The baseline is the last recorded reading **at or before** that midnight, so a value
+computed at 09:00 still measures from 00:00 rather than from the first poll of the day.
+If nothing was recorded before midnight (fresh install), the first reading after it is
+used instead. With no history at all the entity stays unavailable instead of reporting
+a fake `0`.
 
-## 支持的实体
+Notes:
 
-每个被选中的户号（`用户编号`）会成为一个独立设备，可生成以下实体：
+- Requires the built-in **recorder** integration (enabled by default).
+- A fresh install needs at least one midnight to pass before real values appear.
+- If the meter reading goes backwards (meter swap / reset) the window reports
+  unavailable instead of a negative number.
+- Both entities carry `source: home_assistant_recorder` so the origin is verifiable.
 
-| 实体 | 类型 | 说明 |
-|------|------|------|
-| 账户余额 | sensor | 单位 CNY，保留 4 位小数（界面按 2 位显示） |
-| 累积用气量 | sensor | 单位 m³，`total_increasing`，来自营业厅 |
-| 日用气量（本机统计） | sensor | 单位 m³，来自 recorder 历史 |
-| 月用气量（本机统计） | sensor | 单位 m³，来自 recorder 历史 |
-| 通气状态 | binary_sensor | `on` = 已通气 |
-| 余额不足 | binary_sensor | 余额低于阈值时为 `on`（`problem`） |
-| 数据时间 | sensor | 营业厅返回的查询时间 |
-| 最近充值金额 | sensor | 从充值记录读取最新一笔 |
-| 最近充值时间 | sensor | 同上 |
-| 充值笔数 | sensor | 已读取范围内的记录数量 |
+## Entities
 
-每个账号还会额外生成两个账号级实体：
+Every selected meter becomes its own device. Each device can expose:
 
-| 实体 | 类型 | 说明 |
-|------|------|------|
-| 最后刷新时间 | sensor | 本账号最近一次成功刷新的时间 |
-| 立即刷新 | button | 立即触发一次查询 |
+| Entity | Type | Description |
+|---|---|---|
+| Balance | sensor | CNY, 4 decimals stored (2 shown) |
+| Total gas usage | sensor | m³, `total_increasing`, from the portal |
+| Daily usage (local) | sensor | m³, from recorder history |
+| Monthly usage (local) | sensor | m³, from recorder history |
+| Gas supply | binary_sensor | `on` = gas connected |
+| Low balance | binary_sensor | `on` when below the threshold (`problem`) |
+| Data timestamp | sensor | query time reported by the portal |
+| Last recharge amount | sensor | newest recharge record |
+| Last recharge time | sensor | newest recharge record |
+| Recharge count | sensor | records in the fetched range |
+| Refresh now | button | poll this meter immediately |
 
-> 客户名称、详细地址、手机号**不会**生成实体，只作为账号识别信息保存在本地配置条目中。
+> Owner name, address and phone number are **not** exposed as entities. They are only
+> kept locally in the config entry to identify the meter.
 
-## 安装
+## Installation
 
-### 通过 HACS
+### HACS
 
-1. HACS → 集成 → 右上角 `⋮` → **自定义存储库**
-2. 地址填 `https://github.com/moelolinet/kuangyuan_gas`，类别选 **Integration**
-3. 搜索 `旷远燃气` 或 `Kuangyuan Gas` 安装
-4. 重启 Home Assistant
+1. HACS → Integrations → `⋮` → **Custom repositories**
+2. Add `https://github.com/moelolinet/kuangyuan_gas` with category **Integration**
+3. Search for `Kuangyuan Gas` and install
+4. Restart Home Assistant
 
-### 手动安装
+### Manual
 
-把 `custom_components/kuangyuan_gas` 整个目录复制到 Home Assistant 配置目录下的 `custom_components/`，然后重启。
+Copy `custom_components/kuangyuan_gas` into your Home Assistant `custom_components`
+folder and restart.
 
-## 配置
+## Configuration
 
-设置 → 设备与服务 → **添加集成** → 搜索 `旷远燃气`：
+Settings → Devices & Services → **Add integration** → search `Kuangyuan Gas`:
 
-1. 输入营业厅的手机号与密码（可选自定义营业厅地址）
-2. 勾选要显示的户号
-3. 勾选要启用的实体
-4. 设置刷新间隔（秒）与余额不足阈值
+1. Enter the portal mobile number and password (optional custom portal URL)
+2. Select the meters to show
+3. Select the entities to enable
+4. Set the refresh interval and low-balance threshold
 
-保存后即可在仪表盘添加对应实体。
+The entry (hub) is named after the login account.
 
-### 多个账号
+### Multiple accounts
 
-重复「添加集成」即可。每个账号是独立条目，凭据、户号选择和刷新间隔互不影响，登录会话也彼此隔离。
+Add the integration again. Each account is an independent entry: credentials, meter
+selection, interval and login session are fully isolated.
 
-### 修改设置
+### Changing settings
 
-集成卡片 → **配置**，可以随时调整户号、实体和刷新间隔，保存后自动重载；取消勾选的实体和设备会被一并清理。
+Integration card → **Configure**. Meters, entities and the interval can be changed at
+any time; the entry reloads automatically and entities that are no longer selected are
+removed.
 
-## 关于刷新间隔
+## Refresh interval
 
-营业厅前面有云 WAF，登录与查询过于频繁会被限流。集成会在每次请求之间自动串行并加入间隔，建议 **≥ 600 秒**；最低允许 300 秒。
+The portal is protected by a cloud WAF that rate-limits aggressive clients. Requests are
+serialised with a small delay; an interval of **600 seconds or more** is recommended and
+300 seconds is the minimum.
 
-日用/月用气量的历史基线每天（每月）只读取一次，不会随轮询频率增加数据库压力。
+Recorder baselines are read once per day (and once per month), so a fast polling
+interval does not add database load.
 
-## 故障排查
+## Troubleshooting
 
-| 现象 | 原因与处理 |
-|------|-----------|
-| 提示「手机号或密码不正确」 | 密码区分大小写；网页能登录而集成不能时，请检查是否开启了短信二次验证 |
-| 提示「无法连接营业厅」 | 网络不通或被风控；稍后重试 |
-| 实体变为不可用 | 该户号本次查询失败，集成会保留上次数值并记录 `last_error` 属性 |
-| 日用/月用气量不可用 | 未启用 recorder，或历史数据不足（尚未跨过 00:00） |
-| 长期提示重新验证 | 密码已在营业厅修改，或账号被限制，请在网页端确认 |
+| Symptom | Cause / fix |
+|---|---|
+| "Wrong mobile number or password" | Passwords are case sensitive. If the website works but this does not, check for SMS two-factor authentication |
+| "Cannot reach the portal" | Network issue or rate limiting; retry later |
+| Entity unavailable | That meter's query failed; the last value is kept and `last_error` is set |
+| Daily/monthly usage unavailable | Recorder disabled, or not enough history yet |
+| Re-auth keeps appearing | Password changed on the portal, or the account is restricted |
 
-## 免责声明
+## Disclaimer
 
-本项目为个人自用集成，与旷远能源股份有限公司无关。余额数据以营业厅页面显示为准。请勿高频轮询。
+Personal project, not affiliated with Kuangyuan Energy Co., Ltd. Balance values are as
+reported by the portal. Please do not poll aggressively.
 
-## 许可
+## License
 
 MIT

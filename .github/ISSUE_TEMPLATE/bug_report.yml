@@ -1,0 +1,23 @@
+---
+name: Bug report
+about: Something does not work as expected
+title: "[Bug] "
+labels: bug
+---
+
+**Describe the bug**
+A clear description of what happens.
+
+**Home Assistant version**
+(e.g. 2024.12.3)
+
+**Integration version**
+(installed version shown in HACS)
+
+**Logs**
+```
+paste relevant log lines here (redact phone numbers, meter numbers and addresses)
+```
+
+**Additional context**
+Anything else that helps.

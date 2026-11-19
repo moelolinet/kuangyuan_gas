@@ -87,32 +87,23 @@ def prune_removed(
     dev_reg = dr.async_get(hass)
 
     keep_devices = {f"{entry.entry_id}_{uno}" for uno in keep}
-    keep_devices.add(f"{entry.entry_id}_account")
-    account_prefix = f"{entry.entry_id}_account_"
 
     for item in er.async_entries_for_config_entry(ent_reg, entry.entry_id):
         unique_id = item.unique_id or ""
         if item.platform != DOMAIN:
             continue
 
-        if unique_id.startswith(account_prefix):
-            # Account level entities end with their key.
-            key = unique_id[len(account_prefix) :]
-            wanted = key in keys
+        meter = next(
+            (uno for uno in keep if unique_id.startswith(f"{entry.entry_id}_{uno}_")),
+            None,
+        )
+        if meter is None:
+            # Covers entities of deselected meters and the account level
+            # entities of older versions, which no longer exist.
+            wanted = False
         else:
-            meter = next(
-                (
-                    uno
-                    for uno in keep
-                    if unique_id.startswith(f"{entry.entry_id}_{uno}_")
-                ),
-                None,
-            )
-            if meter is None:
-                wanted = False
-            else:
-                key = unique_id[len(f"{entry.entry_id}_{meter}_") :]
-                wanted = key in keys
+            key = unique_id[len(f"{entry.entry_id}_{meter}_") :]
+            wanted = key in keys
 
         if not wanted:
             _LOGGER.debug("Removing stale entity: %s", item.entity_id)
@@ -232,6 +223,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if runtime is not None:
             await runtime.coordinator.api.async_close()
     return unload_ok
+
 
 
 

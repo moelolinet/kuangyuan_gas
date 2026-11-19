@@ -2,108 +2,103 @@
   "config": {
     "step": {
       "user": {
-        "title": "旷远燃气账号",
-        "description": "输入网上营业厅 (www.kynyyyt.com) 的登录手机号与密码。凭据只保存在本机 Home Assistant 配置中。",
+        "title": "Kuangyuan Gas account",
+        "description": "Enter the mobile number and password of the Kuangyuan Energy customer portal (www.kynyyyt.com). Credentials are stored only in your local Home Assistant configuration.",
         "data": {
-          "username": "手机号",
-          "password": "密码",
-          "base_url": "营业厅地址"
+          "username": "Mobile number",
+          "password": "Password",
+          "base_url": "Portal URL"
         }
       },
       "meters": {
-        "title": "选择户号与实体",
-        "description": "勾选需要显示的燃气户号，以及每个户号要生成的实体类型。刷新间隔建议不低于 300 秒，避免触发营业厅风控。",
+        "title": "Meters and entities",
+        "description": "Select the gas meters to expose and the entity types to create for each of them. Keep the refresh interval at 300 seconds or more to avoid the portal's rate limiting.",
         "data": {
-          "selected_unos": "显示哪些户号",
-          "entity_keys": "启用哪些实体",
-          "scan_interval": "自动刷新间隔（秒）",
-          "low_balance_threshold": "余额不足阈值（元）",
-          "enable_recharge_sensors": "读取充值记录",
-          "recharge_pages": "充值记录读取页数"
+          "selected_unos": "Meters to show",
+          "entity_keys": "Entities to enable",
+          "scan_interval": "Refresh interval (seconds)",
+          "low_balance_threshold": "Low balance threshold (CNY)",
+          "recharge_pages": "Recharge history pages"
         }
       },
       "reauth_confirm": {
-        "title": "重新验证旷远燃气账号",
-        "description": "账号 {username}（{url}）的登录已失效，请重新输入密码。",
+        "title": "Re-authenticate Kuangyuan Gas",
+        "description": "The session for {username} ({url}) is no longer valid. Enter the password again.",
         "data": {
-          "password": "密码"
+          "password": "Password"
         }
       }
     },
     "error": {
-      "invalid_auth": "手机号或密码不正确",
-      "cannot_connect": "无法连接营业厅，可能被风控拦截，请稍后再试",
-      "no_accounts": "该账号下没有查询到燃气户号",
-      "no_meter_selected": "请至少选择一个户号",
-      "unknown": "未知错误，请查看日志"
+      "invalid_auth": "Wrong mobile number or password",
+      "cannot_connect": "Cannot reach the portal (rate limited?), please try again later",
+      "no_accounts": "No gas meter is bound to this account",
+      "no_meter_selected": "Select at least one meter",
+      "unknown": "Unexpected error, check the log"
     },
     "abort": {
-      "already_configured": "该账号已经配置过了",
-      "reauth_successful": "重新验证成功",
-      "reauth_failed": "重新验证失败，请删除后重新添加",
-      "no_accounts": "没有可用的燃气户号"
+      "already_configured": "This account is already configured",
+      "reauth_successful": "Re-authentication successful",
+      "reauth_failed": "Re-authentication failed, remove and add the integration again",
+      "no_accounts": "No gas meter available"
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "旷远燃气设置",
-        "description": "调整本账号显示哪些户号、启用哪些实体，以及自动刷新间隔。",
+        "title": "Kuangyuan Gas options",
+        "description": "Choose the meters and entity types of this account and set the refresh interval.",
         "data": {
-          "selected_unos": "显示哪些户号",
-          "entity_keys": "启用哪些实体",
-          "scan_interval": "自动刷新间隔（秒）",
-          "low_balance_threshold": "余额不足阈值（元）",
-          "enable_recharge_sensors": "读取充值记录",
-          "recharge_pages": "充值记录读取页数"
+          "selected_unos": "Meters to show",
+          "entity_keys": "Entities to enable",
+          "scan_interval": "Refresh interval (seconds)",
+          "low_balance_threshold": "Low balance threshold (CNY)",
+          "recharge_pages": "Recharge history pages"
         }
       }
     },
     "error": {
-      "no_meter_selected": "请至少选择一个户号"
+      "no_meter_selected": "Select at least one meter"
     }
   },
   "entity": {
     "sensor": {
       "balance": {
-        "name": "账户余额"
+        "name": "Balance"
       },
       "usage": {
-        "name": "累积用气量"
+        "name": "Total gas usage"
       },
       "daily_usage": {
-        "name": "日用气量（本机统计）"
+        "name": "Daily usage (local)"
       },
       "monthly_usage": {
-        "name": "月用气量（本机统计）"
+        "name": "Monthly usage (local)"
       },
       "data_updated_at": {
-        "name": "数据时间"
+        "name": "Data timestamp"
       },
       "last_recharge_amount": {
-        "name": "最近充值金额"
+        "name": "Last recharge amount"
       },
       "last_recharge_time": {
-        "name": "最近充值时间"
+        "name": "Last recharge time"
       },
       "recharge_count": {
-        "name": "充值笔数"
-      },
-      "last_refresh": {
-        "name": "最后刷新时间"
+        "name": "Recharge count"
       }
     },
     "binary_sensor": {
       "supply": {
-        "name": "通气状态"
+        "name": "Gas supply"
       },
       "low_balance": {
-        "name": "余额不足"
+        "name": "Low balance"
       }
     },
     "button": {
       "refresh": {
-        "name": "立即刷新"
+        "name": "Refresh now"
       }
     }
   }

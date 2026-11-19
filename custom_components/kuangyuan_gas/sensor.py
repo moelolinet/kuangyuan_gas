@@ -14,7 +14,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory, UnitOfVolume
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.util import dt as dt_util
 
 from .api import GasAccount
 from .const import (
@@ -23,14 +22,13 @@ from .const import (
     KEY_DAILY_USAGE,
     KEY_LAST_RECHARGE_AMOUNT,
     KEY_LAST_RECHARGE_TIME,
-    KEY_LAST_REFRESH,
     KEY_MONTHLY_USAGE,
     KEY_RECHARGE_COUNT,
     KEY_UPDATED_AT,
     KEY_USAGE,
 )
 from .coordinator import KuangyuanCoordinator
-from .entity import KuangyuanAccountEntity, KuangyuanMeterEntity, portal_local
+from .entity import KuangyuanMeterEntity, portal_local
 from .runtime import KuangyuanRuntime
 
 
@@ -45,9 +43,6 @@ async def async_setup_entry(
     keys = runtime.entity_keys
     label = runtime.account_label
     entities: list[SensorEntity] = []
-
-    if KEY_LAST_REFRESH in keys:
-        entities.append(KuangyuanLastRefreshSensor(coordinator, label))
 
     for uno in runtime.selected_unos:
         account = runtime.accounts[uno]
@@ -333,37 +328,3 @@ class KuangyuanRechargeCountSensor(KuangyuanMeterEntity, SensorEntity):
         attrs = self.meter_attributes()
         attrs["fetched_pages"] = self.coordinator.recharge_pages
         return attrs
-
-
-class KuangyuanLastRefreshSensor(KuangyuanAccountEntity, SensorEntity):
-    """Timestamp of the last successful poll of this account."""
-
-    _attr_translation_key = KEY_LAST_REFRESH
-    _attr_device_class = SensorDeviceClass.TIMESTAMP
-    _attr_icon = "mdi:update"
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
-
-    def __init__(self, coordinator: KuangyuanCoordinator, account_label: str) -> None:
-        super().__init__(coordinator, account_label)
-        self._attr_unique_id = f"{coordinator.entry.entry_id}_account_{KEY_LAST_REFRESH}"
-
-    @property
-    def native_value(self) -> datetime | None:
-        data = self.coordinator.data
-        if data is None or data.last_refresh is None:
-            return None
-        return dt_util.as_utc(data.last_refresh)
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        data = self.coordinator.data
-        meters = data.meters if data else {}
-        return {
-            "meters": len(meters),
-            "readable_meters": sum(1 for meter in meters.values() if meter.available),
-            "refresh_interval_seconds": int(
-                self.coordinator.update_interval.total_seconds()
-            )
-            if self.coordinator.update_interval
-            else None,
-        }

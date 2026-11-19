@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .api import GasAccount
-from .const import ACCOUNT_LEVEL_KEYS, METER_LEVEL_KEYS
+from .const import METER_LEVEL_KEYS
 from .coordinator import KuangyuanCoordinator
 
 
@@ -28,7 +28,3 @@ class KuangyuanRuntime:
     def meter_keys(self) -> set[str]:
         """Enabled entity kinds that belong to a meter device."""
         return {key for key in self.entity_keys if key in METER_LEVEL_KEYS}
-
-    def account_keys(self) -> set[str]:
-        """Enabled entity kinds that belong to the account device."""
-        return {key for key in self.entity_keys if key in ACCOUNT_LEVEL_KEYS}

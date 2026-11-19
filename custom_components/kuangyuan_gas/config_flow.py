@@ -54,6 +54,7 @@ from .const import (
     DEFAULT_RECHARGE_PAGES,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    ENTITY_LABELS_EN,
     ENTITY_LABELS_ZH,
     MAX_RECHARGE_PAGES,
     MAX_SCAN_INTERVAL,
@@ -94,10 +95,15 @@ def account_options(accounts: dict[str, GasAccount]) -> list[SelectOptionDict]:
     return options
 
 
-def entity_options() -> list[SelectOptionDict]:
-    """Select options for the entity kinds."""
+def entity_options(language: str | None = None) -> list[SelectOptionDict]:
+    """Select options for the entity kinds, following the UI language."""
+    labels = (
+        ENTITY_LABELS_EN
+        if str(language or "").lower().startswith("en")
+        else ENTITY_LABELS_ZH
+    )
     return [
-        SelectOptionDict(value=key, label=ENTITY_LABELS_ZH.get(key, key))
+        SelectOptionDict(value=key, label=labels.get(key, key))
         for key in ALL_ENTITY_KEYS
     ]
 
@@ -120,7 +126,9 @@ def credential_schema(defaults: dict[str, Any]) -> vol.Schema:
 
 
 def selection_schema(
-    defaults: dict[str, Any], accounts: dict[str, GasAccount]
+    defaults: dict[str, Any],
+    accounts: dict[str, GasAccount],
+    language: str | None = None,
 ) -> vol.Schema:
     """Form for meters, entity kinds and polling settings."""
     selected = [
@@ -146,7 +154,7 @@ def selection_schema(
             ),
             vol.Required(CONF_ENTITY_KEYS, default=keys): SelectSelector(
                 SelectSelectorConfig(
-                    options=entity_options(),
+                    options=entity_options(language),
                     multiple=True,
                     mode=SelectSelectorMode.LIST,
                 )
@@ -220,16 +228,9 @@ def serialize_accounts(accounts: dict[str, GasAccount]) -> list[dict[str, str]]:
     ]
 
 
-def entry_title(selected: list[str], accounts: dict[str, GasAccount]) -> str:
-    """A short, non-identifying title for the config entry."""
-    if len(selected) == 1:
-        account = accounts.get(selected[0])
-        label = account.uno if account else selected[0]
-        return f"旷远燃气 {label}"
-    for account in accounts.values():
-        if account.tel:
-            return f"旷远燃气 {mask_phone(account.tel)}"
-    return f"旷远燃气 {len(selected)} 个户号"
+def entry_title(username: str) -> str:
+    """Use the portal login (mobile number) as the default hub name."""
+    return str(username).strip()
 
 
 class KuangyuanGasConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -298,13 +299,13 @@ class KuangyuanGasConfigFlow(ConfigFlow, domain=DOMAIN):
             else:
                 data[CONF_ACCOUNTS] = serialize_accounts(self._accounts)
                 return self.async_create_entry(
-                    title=entry_title(data[CONF_SELECTED_UNOS], self._accounts),
+                    title=entry_title(self._credentials[CONF_USERNAME]),
                     data={**self._credentials, **data},
                 )
 
         return self.async_show_form(
             step_id="meters",
-            data_schema=selection_schema({}, self._accounts),
+            data_schema=selection_schema({}, self._accounts, self.hass.config.language),
             errors=errors,
         )
 
@@ -419,7 +420,9 @@ class KuangyuanGasOptionsFlow(OptionsFlow):
         current = {**entry.data, **entry.options}
         return self.async_show_form(
             step_id="init",
-            data_schema=selection_schema(current, accounts),
+            data_schema=selection_schema(
+                current, accounts, self.hass.config.language
+            ),
             errors=errors,
         )
 

@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "旷远燃气账号",
-        "description": "输入网上营业厅 (www.kynyyyt.com) 的登录手机号与密码。凭据只保存在本机 Home Assistant 配置中。",
+        "description": "输入旷远能源网上营业厅 (www.kynyyyt.com) 的登录手机号与密码。凭据只保存在本机 Home Assistant 配置中。",
         "data": {
           "username": "手机号",
           "password": "密码",
@@ -18,7 +18,6 @@
           "entity_keys": "启用哪些实体",
           "scan_interval": "自动刷新间隔（秒）",
           "low_balance_threshold": "余额不足阈值（元）",
-          "enable_recharge_sensors": "读取充值记录",
           "recharge_pages": "充值记录读取页数"
         }
       },
@@ -54,7 +53,6 @@
           "entity_keys": "启用哪些实体",
           "scan_interval": "自动刷新间隔（秒）",
           "low_balance_threshold": "余额不足阈值（元）",
-          "enable_recharge_sensors": "读取充值记录",
           "recharge_pages": "充值记录读取页数"
         }
       }
@@ -88,9 +86,6 @@
       },
       "recharge_count": {
         "name": "充值笔数"
-      },
-      "last_refresh": {
-        "name": "最后刷新时间"
       }
     },
     "binary_sensor": {
