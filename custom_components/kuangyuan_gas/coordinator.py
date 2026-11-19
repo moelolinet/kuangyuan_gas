@@ -55,6 +55,8 @@ class MeterData:
     monthly_usage: float | None = None
     daily_baseline: float | None = None
     monthly_baseline: float | None = None
+    daily_baseline_source: str | None = None
+    monthly_baseline_source: str | None = None
 
 
 @dataclass(slots=True)
@@ -100,7 +102,7 @@ class KuangyuanCoordinator(DataUpdateCoordinator[GasData]):
         self.enable_consumption = enable_consumption
         # Recorded baseline per window, so the recorder is queried at most once
         # per day/month instead of on every poll.
-        self._baselines: dict[str, tuple[datetime, dict[str, float | None]]] = {}
+        self._baselines: dict[tuple[str, str], tuple[datetime, Any]] = {}
         super().__init__(
             hass,
             _LOGGER,
@@ -178,11 +180,13 @@ class KuangyuanCoordinator(DataUpdateCoordinator[GasData]):
         return resolved
 
     async def async_refresh_consumption(self, data: GasData | None = None) -> None:
-        """Compute daily/monthly consumption from the recorder history.
+        """Recompute daily/monthly consumption from the recorder history.
 
-        Baselines are only read when the day or month window changed, so a
-        regular poll costs nothing extra; the first call after setup (and the
-        first poll of a new day) does one query per window for all meters.
+        The *baseline* (the reading at the window boundary) is cached per meter
+        and per window, because it does not change during that window.  The
+        *consumption* is recomputed from the freshly polled cumulative reading
+        on every call, so an increasing meter immediately increases the daily
+        and monthly values.
         """
         if not self.enable_consumption:
             return
@@ -199,40 +203,62 @@ class KuangyuanCoordinator(DataUpdateCoordinator[GasData]):
 
         if recorder_available(self.hass):
             for kind, window in windows.items():
-                cached = self._baselines.get(kind)
-                # Re-read when the window changed, and also when the previous
-                # read produced nothing: an early poll may run before the
-                # recorder has any history, and that must not be cached
-                # forever.
-                if cached is not None and cached[0] == window.start and cached[1]:
+                # Only meters without a baseline for this exact window need a
+                # database read.  A meter whose lookup previously failed is
+                # retried on the next poll instead of staying unknown forever.
+                # Only an exact baseline (a reading at or before the
+                # boundary) is cached for the whole window.  A provisional one
+                # (post-boundary or first-recorded) is retried on every poll,
+                # because the recorder may fill in better history later - e.g.
+                # right after the integration was installed mid-window.
+                missing = [
+                    entity_id
+                    for entity_id in entity_ids.values()
+                    if not self._baseline_is_final(kind, entity_id, window.start)
+                ]
+                if not missing:
                     continue
-                values = await async_read_baselines(
-                    self.hass, list(entity_ids.values()), window.start
+                values = await async_read_baselines(self.hass, missing, window.start)
+                for entity_id, baseline in values.items():
+                    self._baselines[(kind, entity_id)] = (window.start, baseline)
+                _LOGGER.debug(
+                    "Usage baseline (%s) resolved for %d of %d pending meters",
+                    kind,
+                    len(values),
+                    len(missing),
                 )
-                if values:
-                    self._baselines[kind] = (window.start, values)
-                    _LOGGER.debug(
-                        "Usage baseline (%s) read for %d of %d meters",
-                        kind,
-                        len(values),
-                        len(entity_ids),
-                    )
-                else:
-                    # Keep only the window marker so the failed lookup is not
-                    # remembered, but do not lose an older successful value.
-                    _LOGGER.debug("No usage baseline yet for window %s", kind)
 
         for uno, meter in target.meters.items():
             entity_id = entity_ids.get(uno)
             if not entity_id:
                 continue
             current = meter.balance.usage if meter.balance else None
-            day_base = self._baselines.get("day", (None, {}))[1].get(entity_id)
-            month_base = self._baselines.get("month", (None, {}))[1].get(entity_id)
-            meter.daily_baseline = day_base
-            meter.monthly_baseline = month_base
-            meter.daily_usage = compute_consumption(current, day_base)
-            meter.monthly_usage = compute_consumption(current, month_base)
+            day_baseline = self._cached_baseline("day", entity_id, windows["day"].start)
+            month_baseline = self._cached_baseline(
+                "month", entity_id, windows["month"].start
+            )
+            meter.daily_baseline = day_baseline.value if day_baseline else None
+            meter.monthly_baseline = month_baseline.value if month_baseline else None
+            meter.daily_baseline_source = day_baseline.source if day_baseline else None
+            meter.monthly_baseline_source = (
+                month_baseline.source if month_baseline else None
+            )
+            meter.daily_usage = compute_consumption(current, day_baseline)
+            meter.monthly_usage = compute_consumption(current, month_baseline)
+
+    def _cached_baseline(self, kind: str, entity_id: str, window_start: datetime):
+        """Return the cached baseline of one meter for the current window."""
+        cached = self._baselines.get((kind, entity_id))
+        if cached is None or cached[0] != window_start:
+            return None
+        return cached[1]
+
+    def _baseline_is_final(
+        self, kind: str, entity_id: str, window_start: datetime
+    ) -> bool:
+        """Whether the cached baseline is exact and needs no more lookups."""
+        baseline = self._cached_baseline(kind, entity_id, window_start)
+        return baseline is not None and baseline.exact
 
     # ------------------------------------------------------------------ meter
     async def _async_read_balance(self, uno: str) -> BalanceInfo:

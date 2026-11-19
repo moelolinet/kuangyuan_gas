@@ -179,39 +179,78 @@ async def test_daily_and_monthly_computed_from_history(hass, fake_portal, record
     )
 
 
-async def test_missing_history_yields_unknown(hass, fake_portal, recorder_mock):
-    """Without history the sensors stay unknown instead of reporting 0."""
-    entry = build_entry(BASE_URL, entry_id="no_history")
+async def test_fresh_install_starts_at_zero_and_grows(hass, fake_portal, recorder_mock):
+    """Right after install there is no earlier reading, so usage starts at 0.
+
+    This is deliberately better than "unknown": the first poll becomes the
+    baseline and every later, higher reading increases the value, which is the
+    behaviour a user expects from a fresh install.
+    """
+    entry = build_entry(BASE_URL, entry_id="fresh_install")
     entry.add_to_hass(hass)
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
     ids = ids_for(hass, entry.entry_id)
-    state = hass.states.get(ids["daily"])
-    assert state is not None
-    assert state.state in (STATE_UNAVAILABLE, "unknown")
-    assert state.attributes.get("source") == "home_assistant_recorder"
+    daily = hass.states.get(ids["daily"])
+    monthly = hass.states.get(ids["monthly"])
+    assert daily is not None and monthly is not None
+    assert float(daily.state) == pytest.approx(0.0, abs=0.001), daily.state
+    assert float(monthly.state) == pytest.approx(0.0, abs=0.001), monthly.state
+    assert daily.attributes["baseline_source"] == "first_recorded"
+    assert monthly.attributes["baseline_source"] == "first_recorded"
 
-
-async def test_consumption_ignores_portal_fields(hass, fake_portal, recorder_mock):
-    """A portal payload without usage data must not break the recorder values."""
-    now = dt_util.now()
-    midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
-
-    entry = build_entry(BASE_URL, entry_id="no_portal_usage")
-    entry.add_to_hass(hass)
-    await hass.config_entries.async_setup(entry.entry_id)
-    await hass.async_block_till_done()
-
-    ids = ids_for(hass, entry.entry_id)
-    await seed_history(
-        hass, recorder_mock, ids["usage"], [(midnight - timedelta(minutes=10), 10.0)]
-    )
-    coord = hass.data[DOMAIN][entry.entry_id].coordinator
-    await coord.async_refresh()
+    # The meter now reports more gas used: both values must increase.
+    fake_portal.balances["UNO000001"] = (123.45, 47.67, "已通气")
+    await hass.data[DOMAIN][entry.entry_id].coordinator.async_refresh()
     await hass.async_block_till_done()
 
     daily = hass.states.get(ids["daily"])
-    assert daily is not None
-    # 45.67 - 10.00 from history; nothing came from the portal for this value.
-    assert float(daily.state) == pytest.approx(35.67, abs=0.02), daily.state
+    monthly = hass.states.get(ids["monthly"])
+    assert float(daily.state) == pytest.approx(2.0, abs=0.02), daily.state
+    assert float(monthly.state) == pytest.approx(2.0, abs=0.02), monthly.state
+
+async def test_monthly_usage_not_unknown_when_installed_mid_month(
+    hass, fake_portal, recorder_mock
+):
+    """The reported bug: installed mid-month, monthly usage must still work.
+
+    Only "today" history exists (the install happened after the 1st), so the
+    month baseline has to fall back to the earliest recorded reading instead of
+    leaving the sensor unknown forever.
+    """
+    now = dt_util.now()
+    midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    # Skip the scenario on the 1st of a month: there is nothing in between.
+    if month_start >= midnight:
+        pytest.skip("runs on a day other than the 1st")
+
+    entry = build_entry(BASE_URL, entry_id="mid_month")
+    entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+
+    ids = ids_for(hass, entry.entry_id)
+    # History only from mid-month: 200.00 six days ago, 208.00 before midnight.
+    mid = max(month_start + timedelta(days=1), midnight - timedelta(days=6))
+    await seed_history(
+        hass,
+        recorder_mock,
+        ids["usage"],
+        [(mid, 30.0), (midnight - timedelta(minutes=20), 38.0)],
+    )
+    await hass.data[DOMAIN][entry.entry_id].coordinator.async_refresh()
+    await hass.async_block_till_done()
+
+    monthly = hass.states.get(ids["monthly"])
+    daily = hass.states.get(ids["daily"])
+    assert monthly is not None and daily is not None
+    assert monthly.state not in (STATE_UNAVAILABLE, "unknown"), monthly.state
+    # Portal reports 45.67. The month baseline is the earliest record (30.00)
+    # because nothing was recorded before the 1st; the day baseline is 38.00.
+    assert float(monthly.state) == pytest.approx(15.67, abs=0.02), monthly.state
+    assert float(daily.state) == pytest.approx(7.67, abs=0.02), daily.state
+    assert monthly.attributes["baseline_source"] == "first_recorded"
+    assert daily.attributes["baseline_source"] == "before_boundary"

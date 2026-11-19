@@ -1,8 +1,4 @@
-"""Tests for the recorder based daily/monthly consumption logic.
-
-Loaded standalone: the module is imported directly by file path, so the test
-does not depend on any other test module having created the ``ky`` package.
-"""
+"""Tests for the recorder based daily/monthly consumption logic."""
 
 from __future__ import annotations
 
@@ -16,15 +12,9 @@ ROOT = Path(__file__).resolve().parents[1] / "custom_components" / "kuangyuan_ga
 
 
 def _install_stubs() -> None:
-    """Create only the Home Assistant symbols usage.py imports.
-
-    Other test modules may have registered partial stubs for the same package,
-    so every attribute is checked individually instead of returning early.
-    """
     ha = sys.modules.setdefault("homeassistant", types.ModuleType("homeassistant"))
     if not hasattr(ha, "__path__"):
         ha.__path__ = []
-
     if "homeassistant.core" not in sys.modules:
         core = types.ModuleType("homeassistant.core")
 
@@ -33,7 +23,6 @@ def _install_stubs() -> None:
 
         core.HomeAssistant = HomeAssistant
         sys.modules["homeassistant.core"] = core
-
     util = sys.modules.get("homeassistant.util")
     if util is None:
         util = types.ModuleType("homeassistant.util")
@@ -50,12 +39,10 @@ def _install_stubs() -> None:
 
 
 def _load_usage():
-    """Load usage.py by path, stubbing its only Home Assistant imports."""
     _install_stubs()
     spec = importlib.util.spec_from_file_location("ky_usage", ROOT / "usage.py")
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
-    # Register before executing: dataclasses resolve __module__ via sys.modules.
     sys.modules["ky_usage"] = module
     spec.loader.exec_module(module)
     return module
@@ -66,13 +53,22 @@ usage = _load_usage()
 CST = timezone(timedelta(hours=8))
 
 
+class Row:
+    """Mimics a recorder row (state + timestamp)."""
+
+    def __init__(self, state, moment: datetime):
+        self.state = state
+        self.last_updated_ts = moment.timestamp()
+
+
 class FakeState:
-    """Mimics a recorder State for the float extraction helper."""
+    """Mimics a State object for the float helper."""
 
     def __init__(self, value):
         self.state = value
 
 
+# --------------------------------------------------------------------- windows
 def test_day_window_starts_at_local_midnight():
     now = datetime(2026, 3, 15, 23, 47, 12, tzinfo=CST)
     window = usage.day_window(now)
@@ -101,9 +97,22 @@ def test_day_boundary_at_midnight():
     assert usage.day_window(before).start == datetime(2026, 3, 15, 0, 0, tzinfo=CST)
 
 
+def test_dst_style_shift_keeps_local_midnight():
+    tz = timezone(timedelta(hours=9))
+    now = datetime(2026, 3, 15, 6, 0, tzinfo=tz)
+    assert usage.day_window(now).start == datetime(2026, 3, 15, 0, 0, tzinfo=tz)
+    assert usage.day_window(now).start.hour == 0
+
+
+# ----------------------------------------------------------------- consumption
 def test_consumption_is_difference():
     assert usage.compute_consumption(268.46, 260.00) == 8.46
     assert usage.compute_consumption("268.4600", "260.0000") == 8.46
+
+
+def test_consumption_accepts_baseline_object():
+    baseline = usage.Baseline(100.0, usage.SOURCE_FIRST)
+    assert usage.compute_consumption(107.5, baseline) == 7.5
 
 
 def test_consumption_none_when_missing():
@@ -121,6 +130,74 @@ def test_consumption_zero_when_unchanged():
     assert usage.compute_consumption(100.0, 100.0) == 0.0
 
 
+def test_consumption_grows_with_the_meter():
+    """The core user requirement: a rising meter raises daily and monthly."""
+    baseline = 1000.0
+    first = usage.compute_consumption(1010.0, baseline)
+    later = usage.compute_consumption(1025.4, baseline)
+    assert later > first
+    assert later == 25.4
+
+
+# -------------------------------------------------------------- baseline rules
+def test_baseline_prefers_reading_before_boundary():
+    boundary = datetime(2026, 3, 15, 0, 0, tzinfo=CST)
+    rows = [
+        Row("100.0", boundary - timedelta(hours=6)),
+        Row("104.0", boundary - timedelta(minutes=20)),
+        Row("110.0", boundary + timedelta(minutes=5)),
+    ]
+    picked = usage.select_baseline(rows, boundary)
+    assert picked is not None
+    assert picked.value == 104.0
+    assert picked.source == usage.SOURCE_BEFORE
+    assert picked.exact is True
+
+
+def test_baseline_falls_back_to_reading_after_boundary():
+    boundary = datetime(2026, 3, 15, 0, 0, tzinfo=CST)
+    rows = [
+        Row("110.0", boundary + timedelta(minutes=4)),
+        Row("112.0", boundary + timedelta(hours=3)),
+    ]
+    picked = usage.select_baseline(rows, boundary)
+    assert picked is not None
+    assert picked.value == 110.0
+    assert picked.source == usage.SOURCE_AFTER
+
+
+def test_baseline_falls_back_to_first_record_when_installed_mid_window():
+    """Installed after the boundary: the first reading becomes the baseline."""
+    boundary = datetime(2026, 3, 1, 0, 0, tzinfo=CST)
+    rows = [
+        Row("500.0", datetime(2026, 3, 9, 15, 0, tzinfo=CST)),
+        Row("520.0", datetime(2026, 3, 12, 9, 0, tzinfo=CST)),
+        Row("560.0", datetime(2026, 3, 15, 9, 0, tzinfo=CST)),
+    ]
+    picked = usage.select_baseline(rows, boundary)
+    assert picked is not None
+    assert picked.value == 500.0
+    assert picked.source == usage.SOURCE_FIRST
+
+
+def test_baseline_none_without_rows():
+    boundary = datetime(2026, 3, 15, 0, 0, tzinfo=CST)
+    assert usage.select_baseline([], boundary) is None
+    assert usage.select_baseline([Row("unknown", boundary)], boundary) is None
+    assert usage.select_baseline([Row("unavailable", boundary)], boundary) is None
+
+
+def test_baseline_ignores_non_numeric_rows():
+    boundary = datetime(2026, 3, 15, 0, 0, tzinfo=CST)
+    rows = [
+        Row("abc", boundary - timedelta(minutes=5)),
+        Row("90.0", boundary - timedelta(minutes=40)),
+    ]
+    picked = usage.select_baseline(rows, boundary)
+    assert picked is not None and picked.value == 90.0
+
+
+# --------------------------------------------------------------- helper values
 def test_float_extraction_from_state_objects():
     assert usage._to_float(FakeState("12.5")) == 12.5
     assert usage._to_float(FakeState("unavailable")) is None
@@ -145,11 +222,3 @@ def test_daily_and_monthly_use_different_windows():
     now = datetime(2026, 3, 15, 9, 30, tzinfo=CST)
     assert usage.day_window(now).start != usage.month_window(now).start
     assert usage.day_window(now).start > usage.month_window(now).start
-
-
-def test_dst_style_shift_keeps_local_midnight():
-    """A +1h shift must still produce 00:00 local, not 23:00."""
-    tz = timezone(timedelta(hours=9))
-    now = datetime(2026, 3, 15, 6, 0, tzinfo=tz)
-    assert usage.day_window(now).start == datetime(2026, 3, 15, 0, 0, tzinfo=tz)
-    assert usage.day_window(now).start.hour == 0

@@ -46,13 +46,27 @@ If nothing was recorded before midnight (fresh install), the first reading after
 used instead. With no history at all the entity stays unavailable instead of reporting
 a fake `0`.
 
+Every poll recomputes the value from the freshly read cumulative usage, so when the
+meter reading increases, both the daily and the monthly value increase immediately.
+
+Baseline fallback (so the values are never stuck at "unknown"):
+
+1. the last reading at or before the boundary - exact answer,
+2. the first reading shortly after the boundary - covers the polling gap,
+3. the earliest reading ever recorded - covers an install that happened after
+   the boundary (for example, installed mid-month).
+
+On a completely fresh install the first poll becomes the baseline, so the value
+starts at `0` and grows with the meter from then on.
+
 Notes:
 
 - Requires the built-in **recorder** integration (enabled by default).
-- A fresh install needs at least one midnight to pass before real values appear.
 - If the meter reading goes backwards (meter swap / reset) the window reports
   unavailable instead of a negative number.
-- Both entities carry `source: home_assistant_recorder` so the origin is verifiable.
+- Both entities carry `source: home_assistant_recorder` and `baseline_source`
+  (`before_boundary` / `after_boundary` / `first_recorded`) so the origin is
+  verifiable.
 
 ## Entities
 

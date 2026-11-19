@@ -148,8 +148,9 @@ class _KuangyuanConsumptionSensor(KuangyuanMeterEntity, SensorEntity):
     _attr_suggested_display_precision = 3
     _attr_icon = "mdi:chart-bar"
 
-    _window_attr = "daily"
+    _window_attr = "daily_usage"
     _baseline_attr = "daily_baseline"
+    _baseline_source_attr = "daily_baseline_source"
 
     def __init__(
         self, coordinator: KuangyuanCoordinator, account: GasAccount, account_label: str
@@ -159,7 +160,9 @@ class _KuangyuanConsumptionSensor(KuangyuanMeterEntity, SensorEntity):
     @property
     def native_value(self) -> float | None:
         meter = self.meter
-        return getattr(meter, self._window_attr, None) if meter else None
+        if meter is None:
+            return None
+        return getattr(meter, self._window_attr, None)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -168,14 +171,17 @@ class _KuangyuanConsumptionSensor(KuangyuanMeterEntity, SensorEntity):
         attrs["source"] = "home_assistant_recorder"
         if meter is not None:
             baseline = getattr(meter, self._baseline_attr, None)
+            origin = getattr(meter, self._baseline_source_attr, None)
             current = meter.balance.usage if meter.balance else None
             if baseline is not None:
                 attrs["baseline_usage"] = round(baseline, 4)
+            if origin is not None:
+                attrs["baseline_source"] = origin
             if current is not None:
                 attrs["current_usage"] = round(current, 4)
             if baseline is None or current is None:
                 attrs["note"] = (
-                    "等待 Home Assistant 历史数据" if baseline is None else "当前读数不可用"
+                    "No recorder history yet" if baseline is None else "Current reading unavailable"
                 )
         return attrs
 
@@ -200,6 +206,7 @@ class KuangyuanMonthlyUsageSensor(_KuangyuanConsumptionSensor):
     _attr_translation_key = KEY_MONTHLY_USAGE
     _window_attr = "monthly_usage"
     _baseline_attr = "monthly_baseline"
+    _baseline_source_attr = "monthly_baseline_source"
     _attr_icon = "mdi:chart-timeline-variant"
 
     def __init__(
