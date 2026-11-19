@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "旷远燃气账号",
-        "description": "输入旷远能源网上营业厅 (www.kynyyyt.com) 的登录手机号与密码。凭据只保存在本机 Home Assistant 配置中。",
+        "description": "输入旷远能源网上营业厅的登录手机号与密码。凭据只保存在本机 Home Assistant 配置中。",
         "data": {
           "username": "手机号",
           "password": "密码",

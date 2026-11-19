@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Kuangyuan Gas account",
-        "description": "Enter the mobile number and password of the Kuangyuan Energy customer portal (www.kynyyyt.com). Credentials are stored only in your local Home Assistant configuration.",
+        "description": "Enter the mobile number and password of the Kuangyuan Energy customer portal. Credentials are stored only in your local Home Assistant configuration.",
         "data": {
           "username": "Mobile number",
           "password": "Password",
