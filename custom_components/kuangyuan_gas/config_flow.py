@@ -349,8 +349,11 @@ class KuangyuanGasConfigFlow(ConfigFlow, domain=DOMAIN):
                 merged[CONF_ACCOUNTS] = serialize_accounts(
                     {account.uno: account for account in accounts}
                 )
-                self.hass.config_entries.async_update_entry(entry, data=merged)
-                return self.async_abort(reason="reauth_successful")
+                # Reload as part of the reauth: the update listener is only
+                # registered at the end of async_setup_entry, so an entry that
+                # failed during setup has no listener and would otherwise stay
+                # broken until Home Assistant was restarted.
+                return self.async_update_reload_and_abort(entry, data=merged)
 
         return self.async_show_form(
             step_id="reauth_confirm",
