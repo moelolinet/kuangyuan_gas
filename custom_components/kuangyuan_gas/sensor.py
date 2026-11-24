@@ -272,15 +272,8 @@ class KuangyuanLastRechargeAmountSensor(KuangyuanMeterEntity, SensorEntity):
     def extra_state_attributes(self) -> dict[str, Any]:
         latest = self._latest()
         attrs = self.meter_attributes()
-        if latest is not None:
-            if latest.order_id:
-                attrs["order_id"] = latest.order_id
-            if latest.pay_method:
-                attrs["pay_method"] = latest.pay_method
-            if latest.pay_result:
-                attrs["pay_result"] = latest.pay_result
-            if latest.paid_at is not None:
-                attrs["paid_at"] = latest.paid_at.isoformat(sep=" ", timespec="seconds")
+        if latest is not None and latest.paid_at is not None:
+            attrs["paid_at"] = latest.paid_at.isoformat(sep=" ", timespec="seconds")
         return attrs
 
 
